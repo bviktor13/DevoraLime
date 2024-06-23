@@ -23,34 +23,48 @@ namespace HeroBattle.API.Controllers
         [HttpPost]
         public async Task<ActionResult<CreateArenaResponse>> Create([FromBody] CreateArenaRequest request)
         {
-            var arena = await _arenaRepository.AddAsync(request.NumberOfHeroes);
+            try
+            {
+                var arena = await _arenaRepository.AddAsync(request.NumberOfHeroes);
 
-            var createArenaResponse = arena.Adapt<CreateArenaResponse>();
+                var createArenaResponse = arena.Adapt<CreateArenaResponse>();
 
-            return Ok(createArenaResponse);
+                return Ok(createArenaResponse);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
         }
 
         [HttpGet]
         public async Task<ActionResult<GetArenaHistoryResponse>> Get([FromQuery] GetArenaHistoryRequest request)
         {
-            var getArenaHistoryResponse = new GetArenaHistoryResponse();
-            var arena = await _arenaRepository.GetByIdAsync(request.ArenaId);
-
-            if (arena is null)
+            try
             {
-                return NotFound();
-            }
+                var getArenaHistoryResponse = new GetArenaHistoryResponse();
+                var arena = await _arenaRepository.GetByIdAsync(request.ArenaId);
 
-            if(arena.IsFinished)
-            {
+                if (arena is null)
+                {
+                    return NotFound();
+                }
+
+                if (arena.IsFinished)
+                {
+                    getArenaHistoryResponse = arena.Adapt<GetArenaHistoryResponse>();
+                    return Ok(getArenaHistoryResponse);
+                }
+
+                await _battleRepository.Battle(arena);
+
                 getArenaHistoryResponse = arena.Adapt<GetArenaHistoryResponse>();
                 return Ok(getArenaHistoryResponse);
             }
-
-            await _battleRepository.Battle(arena);
-
-            getArenaHistoryResponse = arena.Adapt<GetArenaHistoryResponse>();
-            return Ok(getArenaHistoryResponse);
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
         }
     }
 }

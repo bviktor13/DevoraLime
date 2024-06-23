@@ -7,31 +7,44 @@ using System.Text;
 using System.Threading.Tasks;
 using HeroBattle.Infrastructure.Repositories;
 using HeroBattle.Domain.Models.Heroes;
+using Microsoft.Extensions.Logging;
 
 namespace HeroBattle.Application.Repositories
 {
     public class BattleRepository : IBattleRepository
     {
         private readonly IArenaRepository _arenaRepository;
+        private readonly ILogger<BattleRepository> _logger;
 
-        public BattleRepository(IArenaRepository arenaRepository)
+        public BattleRepository(IArenaRepository arenaRepository, ILogger<BattleRepository> logger)
         {
-                _arenaRepository = arenaRepository;
+            _arenaRepository = arenaRepository;
+            _logger = logger;
         }
 
         public async Task Battle(Arena arena)
         {
-            var heroes = InitalizeHeroes(arena.NumberOfHeroes);
-
-            Random rand = new Random();
-            while (heroes.Count() > 1)
+            try
             {
-                AttackRound(heroes, rand, arena);
+                var heroes = InitalizeHeroes(arena.NumberOfHeroes);
 
-                heroes = heroes.Where(h => h.Health > 0).ToList();
+                Random rand = new Random();
+                while (heroes.Count > 1)
+                {
+                    AttackRound(heroes, rand, arena);
+
+                    heroes = heroes.Where(h => h.Health > 0).ToList();
+                }
+
+                arena.IsFinished = true;
+
+                await _arenaRepository.UpdateAsync(arena);
             }
-
-            await _arenaRepository.UpdateAsync(arena);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"An error occurred during the battle in arena with Id: {arena.Id}.");
+                throw;
+            }
         }
 
         private void AttackRound(List<Hero> heroes, Random rand, Arena arena)
