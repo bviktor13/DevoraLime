@@ -41,3 +41,7 @@ The battle is round-based, with a random attacker and defender each round. Non-p
 - Use the following command to restore the dependencies: dotnet restore
 - In Package Manager Console, use the following command to restore/create DB: Update-Database
 - Execute the following command to run the application: dotnet run
+
+### Improvements in the future
+- Add Integration Tests
+- Heroes should use StrategyPattern for attack
